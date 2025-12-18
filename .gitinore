@@ -1,7 +1,0 @@
-envIA2/
-__pycache__/
-*.npy
-*.jpg
-*.png
-*.jpeg
-dataset/

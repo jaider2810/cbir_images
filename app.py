@@ -2,12 +2,13 @@ import os
 import tempfile
 import numpy as np
 import streamlit as st
-from PIL import Image
+import cv2
+import joblib
 from descripteurs import concat_feat
 from distances import Recherche_Image_Similaire
 
 st.set_page_config(layout="wide")
-st.title("CBIR avec Streamlit")
+st.title("CBIR Hybride avec Prédiction")
 
 distance = st.selectbox("Distance", ["euclidienne", "manhattan", "chebychev", "canberra"])
 k = st.slider("Top K", 1, 20, 5)
@@ -15,23 +16,30 @@ k = st.slider("Top K", 1, 20, 5)
 uploaded = st.file_uploader("Image requête", type=["jpg", "png", "jpeg"])
 
 if uploaded:
-    img = Image.open(uploaded).convert("RGB")
-    st.image(img, width=300)
+    file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), width=300)
 
-    fd, tmp_path = tempfile.mkstemp(suffix=".jpg")
+    fd, tmp = tempfile.mkstemp(suffix=".jpg")
     os.close(fd)
-    img.save(tmp_path)
+    cv2.imwrite(tmp, img)
 
-    query = concat_feat(tmp_path)
+    query = concat_feat(tmp)
+
+    model = joblib.load("best_model.joblib")
+    predicted_class = model.predict([query])[0]
+
+    st.subheader("Classe prédite")
+    st.write(predicted_class)
 
     signatures = np.load("Signatures_Concat.npy", allow_pickle=True)
+    signatures = np.array([s for s in signatures if s[-2] == predicted_class], dtype=object)
 
     results = Recherche_Image_Similaire(signatures, distance, query, k)
 
     cols = st.columns(5)
-    for i, (path, dist, label) in enumerate(results):
-        full_path = os.path.join("dataset", path)
+    for i, (path, d, label) in enumerate(results):
         with cols[i % 5]:
-            st.image(full_path, use_container_width=True)
+            st.image(os.path.join("dataset", path), use_container_width=True)
             st.write(label)
-            st.write(dist)
+            st.write(d)

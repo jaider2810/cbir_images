@@ -1,29 +1,39 @@
 import numpy as np
-from scipy.spatial.distance import canberra
 
 def euclidienne(a, b):
-    return np.linalg.norm(np.array(a) - np.array(b))
+    a = np.array(a)
+    b = np.array(b)
+    return np.linalg.norm(a - b)
 
 def manhattan(a, b):
-    return np.sum(np.abs(np.array(a) - np.array(b)))
+    a = np.array(a)
+    b = np.array(b)
+    return np.sum(np.abs(a - b))
 
 def chebychev(a, b):
-    return np.max(np.abs(np.array(a) - np.array(b)))
+    a = np.array(a)
+    b = np.array(b)
+    return np.max(np.abs(a - b))
 
 def canberra_dist(a, b):
-    return canberra(a, b)
+    a = np.array(a)
+    b = np.array(b)
+    num = np.abs(a - b)
+    den = np.abs(a) + np.abs(b)
+    mask = den != 0
+    return np.sum(num[mask] / den[mask])
 
-def Recherche_Image_Similaire(signatures, distance_name, query, k):
+def Recherche_Image_Similaire(signatures, dist, query, k):
     res = []
     for s in signatures:
         feat = s[:-2]
         label = s[-2]
         path = s[-1]
-        if distance_name == "euclidienne":
+        if dist == "euclidienne":
             d = euclidienne(feat, query)
-        elif distance_name == "manhattan":
+        elif dist == "manhattan":
             d = manhattan(feat, query)
-        elif distance_name == "chebychev":
+        elif dist == "chebychev":
             d = chebychev(feat, query)
         else:
             d = canberra_dist(feat, query)
